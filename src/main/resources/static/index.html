@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Ветклиника</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="nav-container">
+        <div class="logo">Ветклиника</div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link active">Главная</a>
+            <a href="animals.html" class="nav-link">Животные</a>
+            <a href="animal-types.html" class="nav-link">Типы животных</a>
+            <a href="medical-records.html" class="nav-link">Медицинские записи</a>
+        </div>
+    </div>
+</nav>
+
+<div class="container">
+
+    <h1>Информационная система ветклиники</h1>
+    <p class="subtitle">
+        Управление пациентами, типами животных и медицинскими записями
+    </p>
+
+    <div class="cards-grid">
+        <div class="card link-card" onclick="location.href='animals.html'">
+            <h3>Животные</h3>
+            <p>Список пациентов, добавление и редактирование</p>
+        </div>
+
+        <div class="card link-card" onclick="location.href='animal-types.html'">
+            <h3>Типы животных</h3>
+            <p>Справочник видов животных</p>
+        </div>
+
+        <div class="card link-card" onclick="location.href='medical-records.html'">
+            <h3>Медицинские записи</h3>
+            <p>История лечения и процедур</p>
+        </div>
+    </div>
+
+</div>
+
+</body>
+</html>

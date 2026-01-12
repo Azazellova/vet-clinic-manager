@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <title>Животные</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<nav class="navbar">
+    <div class="nav-container">
+        <div class="logo">Ветклиника</div>
+        <div class="nav-links">
+            <a href="index.html" class="nav-link">Главная</a>
+            <a href="animals.html" class="nav-link">Животные</a>
+            <a href="animal-types.html" class="nav-link">Типы животных</a>
+            <a href="medical-records.html" class="nav-link">Медицинские записи</a>
+        </div>
+    </div>
+</nav>
+
+
+<div class="container">
+
+    <h1>Животные</h1>
+    <p class="subtitle">Управление пациентами ветклиники</p>
+
+    <div class="toolbar">
+        <input id="search" placeholder="Поиск животных...">
+        <button class="btn btn-green" onclick="searchAnimals()">Найти</button>
+        <button class="btn btn-gray" onclick="loadAnimals()">Сбросить</button>
+        <button class="btn btn-blue" onclick="openAddForm()">+ Добавить животное</button>
+    </div>
+
+    <div class="count">
+        Всего животных: <span id="count">0</span>
+    </div>
+
+    <table id="animalsTableWrapper">
+        <thead>
+        <tr>
+            <th>ID</th>
+            <th>Имя</th>
+            <th>Возраст</th>
+            <th>Пол</th>
+            <th>Порода</th>
+            <th>Цвет</th>
+            <th>Вес</th>
+            <th>Тип</th>
+            <th>Действия</th>
+        </tr>
+        </thead>
+        <tbody id="animalsTable"></tbody>
+    </table>
+
+    <div id="noResults" class="empty-state" style="display:none;">
+        Животные не найдены
+    </div>
+
+    <div class="card" id="addForm" style="display:none;">
+        <h3>Добавить животное</h3>
+
+        <div class="form-group">
+            <label>Имя</label>
+            <input id="addName">
+        </div>
+
+        <div class="form-group">
+            <label>Возраст</label>
+            <input id="addAge" type="number">
+        </div>
+
+        <div class="form-group">
+            <label>Порода</label>
+            <input id="addBreed">
+        </div>
+
+        <div class="form-group">
+            <label>Пол</label>
+            <div class="radio-group">
+                <label>
+                    <input type="radio" name="addGender" value="мужской" checked>
+                    Самец
+                </label>
+                <label>
+                    <input type="radio" name="addGender" value="женский">
+                    Самка
+                </label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Вес</label>
+            <input id="addWeight" type="number" step="0.01">
+        </div>
+
+        <div class="form-group">
+            <label>Цвет</label>
+            <input id="addColor">
+        </div>
+
+        <div class="form-group">
+            <label>Тип животного</label>
+            <select id="addType"></select>
+        </div>
+
+        <button class="btn btn-green" onclick="createAnimal()">Добавить</button>
+        <button class="btn btn-gray" onclick="closeAdd()">Отмена</button>
+    </div>
+
+
+    <div class="card" id="editForm" style="display:none;">
+        <h3>Изменить животное</h3>
+
+        <input type="hidden" id="editId">
+
+        <div class="form-group">
+            <label>Имя</label>
+            <input id="editName">
+        </div>
+
+        <div class="form-group">
+            <label>Возраст</label>
+            <input id="editAge" type="number">
+        </div>
+
+        <div class="form-group">
+            <label>Порода</label>
+            <input id="editBreed">
+        </div>
+
+        <div class="form-group">
+            <label>Пол</label>
+            <div class="radio-group">
+                <label>
+                    <input type="radio" name="editGender" value="мужской">
+                    Самец
+                </label>
+                <label>
+                    <input type="radio" name="editGender" value="женский">
+                    Самка
+                </label>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>Вес</label>
+            <input id="editWeight" type="number" step="0.01">
+        </div>
+
+        <div class="form-group">
+            <label>Цвет</label>
+            <input id="editColor">
+        </div>
+
+        <div class="form-group">
+            <label>Тип животного</label>
+            <select id="editType"></select>
+        </div>
+
+
+        <button class="btn btn-green" onclick="saveAnimal()">Сохранить</button>
+        <button class="btn btn-gray" onclick="closeEdit()">Отмена</button>
+    </div>
+
+
+</div>
+
+<script>
+    let animals = [];
+    let animalTypes = [];
+
+    function handleResponse(response) {
+        if (response.ok) {
+            return response.json().catch(() => null);
+        }
+
+        return response.text().then(text => {
+            throw new Error(text);
+        });
+    }
+
+    function showBackendError(errorText) {
+        if (!errorText) {
+            alert('Ошибка запроса');
+            return;
+        }
+
+        const messages = errorText
+            .split(';')
+            .map(e => e.trim())
+            .map(e => {
+                const idx = e.indexOf(':');
+                return idx !== -1 ? e.slice(idx + 1).trim() : e;
+            })
+            .filter(e => e.length > 0);
+
+        alert(messages.join('\n'));
+    }
+
+    function loadAnimals() {
+        fetch('/animals')
+            .then(r => r.json())
+            .then(data => {
+                animals = data;
+                renderTable(data);
+            });
+    }
+
+    function loadAnimalTypes() {
+        fetch('/animal-types')
+            .then(r => r.json())
+            .then(data => {
+                animalTypes = data;
+            })
+            .catch(err => console.error('Ошибка загрузки типов', err));
+    }
+
+    function renderTable(data) {
+        const tableBody = document.getElementById('animalsTable');
+        const tableWrapper = document.getElementById('animalsTableWrapper');
+        const noResults = document.getElementById('noResults');
+
+        tableBody.innerHTML = '';
+        document.getElementById('count').innerText = data.length;
+
+        if (data.length === 0) {
+            tableWrapper.style.display = 'none';
+            noResults.style.display = 'block';
+            return;
+        }
+
+        tableWrapper.style.display = 'table';
+        noResults.style.display = 'none';
+
+        data.forEach(a => {
+            tableBody.innerHTML += `
+        <tr>
+            <td>${a.id}</td>
+            <td>
+                <a class="link"
+                   href="medical-records.html?animalId=${a.id}">
+                    ${a.name}
+                </a>
+            </td>
+            <td>${a.age}</td>
+            <td>${a.gender}</td>
+            <td>${a.breed}</td>
+            <td>${a.color ?? '-'}</td>
+            <td>${a.weight ?? '-'}</td>
+            <td><span class="badge">${a.animalType?.name ?? '-'}</span></td>
+            <td>
+                <button class="btn btn-blue btn-sm" onclick="openMedicalRecords(${a.id})">
+                    Просмотр
+                </button>
+                <button class="btn btn-orange btn-sm" onclick="editAnimal(${a.id})">
+                    Изменить
+                </button>
+                <button class="btn btn-red btn-sm" onclick="deleteAnimal(${a.id})">
+                    Удалить
+                </button>
+            </td>
+        </tr>`;
+        });
+    }
+
+    function searchAnimals() {
+        const q = document.getElementById('search').value.trim().toLowerCase();
+
+        if (!q) {
+            renderTable(animals);
+            return;
+        }
+
+        renderTable(
+            animals.filter(a => a.name.toLowerCase().includes(q))
+        );
+    }
+
+    function fillAddTypeSelect() {
+        const select = document.getElementById('addType');
+        select.innerHTML = '';
+
+        animalTypes.forEach(t => {
+            const option = document.createElement('option');
+            option.value = t.id;
+            option.textContent = t.name;
+            select.appendChild(option);
+        });
+    }
+
+    function openAddForm() {
+        fillAddTypeSelect();
+        document.getElementById('addForm').style.display = 'block';
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function closeAdd() {
+        document.getElementById('addForm').style.display = 'none';
+    }
+
+    function openMedicalRecords(animalId) {
+        window.location.href = `medical-records.html?animalId=${animalId}`;
+    }
+
+    function searchRecords() {
+        const q = document.getElementById('search').value.toLowerCase();
+        renderTable(
+            records.filter(r =>
+                r.diagnosis.toLowerCase().includes(q) ||
+                r.procedureType.toLowerCase().includes(q)
+            )
+        );
+    }
+
+    function editAnimal(id) {
+        const a = animals.find(x => x.id === id);
+
+        document.getElementById('editId').value = a.id;
+        document.getElementById('editName').value = a.name;
+        document.getElementById('editAge').value = a.age;
+        document.getElementById('editBreed').value = a.breed;
+        document.querySelectorAll('input[name="editGender"]').forEach(r => {
+            r.checked = (r.value === a.gender);
+        });
+        document.getElementById('editWeight').value = a.weight;
+        document.getElementById('editColor').value = a.color;
+
+        if (animalTypes.length === 0) {
+            loadAnimalTypes();
+            setTimeout(() => fillTypeSelect(a.animalType.id), 200);
+        } else {
+            fillTypeSelect(a.animalType.id);
+        }
+
+        document.getElementById('editForm').style.display = 'block';
+        window.scrollTo(0, document.body.scrollHeight);
+    }
+
+    function fillTypeSelect(selectedId) {
+        const select = document.getElementById('editType');
+        select.innerHTML = '';
+
+        animalTypes.forEach(t => {
+            const option = document.createElement('option');
+            option.value = t.id;
+            option.textContent = t.name;
+            if (t.id === selectedId) option.selected = true;
+            select.appendChild(option);
+        });
+    }
+
+    function closeEdit() {
+        document.getElementById('editForm').style.display = 'none';
+    }
+
+    function createAnimal() {
+        const data = {
+            name: addName.value.trim(),
+            age: Number(addAge.value),
+            breed: addBreed.value.trim(),
+            gender: document.querySelector('input[name="addGender"]:checked')?.value,
+            weight: Number(addWeight.value),
+            color: addColor.value.trim(),
+            animalType: {
+                id: Number(document.getElementById('addType').value)
+            }
+        };
+
+        if (!validateAnimalForm(data)) return;
+
+        fetch('/animals', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        })
+            .then(handleResponse)
+            .then(() => {
+                closeAdd();
+                loadAnimals();
+            })
+            .catch(err => showBackendError(err.message));
+    }
+
+    function saveAnimal() {
+        const id = editId.value;
+
+        const data = {
+            name: editName.value.trim(),
+            age: Number(editAge.value),
+            breed: editBreed.value.trim(),
+            gender: document.querySelector('input[name="editGender"]:checked')?.value,
+            weight: Number(editWeight.value),
+            color: editColor.value.trim(),
+            animalType: {
+                id: Number(editType.value)
+            }
+        };
+
+        if (!validateAnimalForm(data)) return;
+
+        fetch('/animals/' + id, {
+            method: 'PUT',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify(data)
+        })
+            .then(handleResponse)
+            .then(() => {
+                closeEdit();
+                loadAnimals();
+            })
+            .catch(err => showBackendError(err.message));
+    }
+
+    function deleteAnimal(id) {
+        if (!confirm('Удалить животное?')) return;
+        fetch('/animals/' + id, { method: 'DELETE' })
+            .then(() => loadAnimals());
+    }
+
+
+    function validateAnimalForm(data) {
+        if (!data.name || data.name.trim().length < 2) {
+            alert('Имя должно содержать минимум 2 символа');
+            return false;
+        }
+
+        if (data.age === null || isNaN(data.age) || data.age <= 0 || data.age > 100) {
+            alert('Возраст обязателен и должен быть от 1 до 100');
+            return false;
+        }
+
+        if (!data.breed || data.breed.trim().length === 0) {
+            alert('Порода обязательна');
+            return false;
+        }
+
+        if (!data.gender) {
+            alert('Выберите пол');
+            return false;
+        }
+
+        if (!data.weight || data.weight <= 0) {
+            alert('Вес должен быть положительным');
+            return false;
+        }
+
+        if (!data.color || data.color.trim().length === 0) {
+            alert('Цвет обязателен');
+            return false;
+        }
+
+        if (!data.animalType?.id) {
+            alert('Выберите тип животного');
+            return false;
+        }
+
+        return true;
+    }
+
+    loadAnimalTypes();
+    loadAnimals();
+</script>
+
+<script>
+    document.querySelectorAll('.nav-link').forEach(link => {
+        if (link.href === window.location.href) {
+            link.classList.add('active');
+        }
+    });
+</script>
+
+</body>
+</html>
