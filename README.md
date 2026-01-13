@@ -27,6 +27,8 @@ Frontend:
 - HTML
 - CSS
 - JavaScript(JS)
+## Структура таблиц в базе данных
+<img width="870" height="440" alt="image" src="https://github.com/user-attachments/assets/4cae2ade-a102-4167-b5c6-7583ce0abbd7" />
 
 ## Структура проекта
 ```
