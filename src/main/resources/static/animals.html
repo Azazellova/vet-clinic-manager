@@ -345,7 +345,9 @@
             const option = document.createElement('option');
             option.value = t.id;
             option.textContent = t.name;
-            if (t.id === selectedId) option.selected = true;
+            if (t.id === selectedId) {
+                option.selected = true;
+            }
             select.appendChild(option);
         });
     }
@@ -367,7 +369,9 @@
             }
         };
 
-        if (!validateAnimalForm(data)) return;
+        if (!validateAnimalForm(data)) {
+            return;
+        }
 
         fetch('/animals', {
             method: 'POST',
