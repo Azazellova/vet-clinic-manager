@@ -15,7 +15,12 @@ public class TextNormalizer {
      * @return Нормализованная строка (с заглавной первой буквой) или исходное значение, если оно null или пустое
      */
     public static String capitalize(String value) {
-        if (value == null || value.isBlank()) return value;
+        //FIX_ME: однострочные конструкции if-else запрещены
+        //if (value == null || value.isBlank()) return value;
+
+        if (value == null || value.isBlank()) {
+            return value;
+        }
 
         value = value.trim().toLowerCase();
         return value.substring(0, 1).toUpperCase() + value.substring(1);

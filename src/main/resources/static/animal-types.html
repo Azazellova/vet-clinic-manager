@@ -94,7 +94,7 @@
     let types = [];
 
     function loadTypes() {
-        fetch('/animal-types')
+        fetch('/api/v1/animal-types')
             .then(r => r.json())
             .then(data => {
                 types = data;
@@ -206,7 +206,7 @@
             return;
         }
 
-        fetch('/animal-types', {
+        fetch('/api/v1/animal-types', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
@@ -234,7 +234,7 @@
             return;
         }
 
-        fetch('/animal-types/' + id, {
+        fetch('/api/v1/animal-types/' + id, {
             method: 'PUT',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
@@ -272,7 +272,7 @@
             return;
         }
 
-        fetch(`/animal-types/${id}`, { method: 'DELETE' })
+        fetch(`/api/v1/animal-types/${id}`, { method: 'DELETE' })
             .then(loadTypes);
     }
 

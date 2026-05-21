@@ -1,11 +1,15 @@
 package com.psu.vet_clinic.service;
 
+import com.psu.vet_clinic.dto.request.AnimalTypeRequestDto;
+import com.psu.vet_clinic.dto.response.AnimalTypeResponseDto;
 import com.psu.vet_clinic.entity.AnimalType;
 import com.psu.vet_clinic.exception.NotFoundException;
 import com.psu.vet_clinic.repository.AnimalTypeRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.psu.vet_clinic.util.TextNormalizer.capitalize;
 
@@ -13,85 +17,149 @@ import static com.psu.vet_clinic.util.TextNormalizer.capitalize;
  * Сервис для работы с типами животных в ветеринарной клинике.
  * Обеспечивает бизнес-логику операций CRUD для сущности AnimalType.
  */
+//FIX_ME: после добавления DTO обновлена логика всех методов
 @Service
 public class AnimalTypeService {
 
     /**
-     * Репозиторий для работы с данными типов животных
+     * Репозиторий для работы с данными типов животных.
      */
-    private final AnimalTypeRepository repository;
+    private final AnimalTypeRepository animalTypeRepository;
 
     /**
      * Конструктор с внедрением зависимости репозитория.
      *
-     * @param repository Репозиторий для работы с типами животных
+     * @param animalTypeRepository репозиторий типов животных
      */
-    public AnimalTypeService(AnimalTypeRepository repository) {
-        this.repository = repository;
+    public AnimalTypeService(
+            AnimalTypeRepository animalTypeRepository
+    ) {
+        this.animalTypeRepository = animalTypeRepository;
     }
 
     /**
      * Получает список всех типов животных в системе.
      *
-     * @return Список всех типов животных
+     * @return список всех типов животных
      */
-    public List<AnimalType> findAll() {
-        return repository.findAll();
+    public List<AnimalTypeResponseDto> findAll() {
+
+        return animalTypeRepository.findAll()
+                .stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
     }
 
     /**
-     * Находит тип животного по его идентификатору.
+     * Находит тип животного по идентификатору.
      *
-     * @param id Идентификатор типа животного
-     * @return Найденный тип животного
-     * @throws NotFoundException Если тип животного с указанным идентификатором не найден
+     * @param id идентификатор типа животного
+     * @return найденный тип животного
+     * @throws NotFoundException если тип животного не найден
      */
-    public AnimalType findById(Integer id) {
-        return repository.findById(id)
+    public AnimalTypeResponseDto findById(Integer id) {
+
+        AnimalType animalType = animalTypeRepository.findById(id)
                 .orElseThrow(() ->
-                        new NotFoundException("AnimalType not found: " + id));
+                        new NotFoundException(
+                                "Тип животного не найден"
+                        ));
+
+        return toDto(animalType);
     }
 
     /**
      * Сохраняет тип животного в системе.
-     * Перед сохранением нормализует название типа, приводя его к виду с заглавной первой буквой.
      *
-     * @param type Объект типа животного для сохранения
-     * @return Сохраненный тип животного
+     * @param dto DTO объект типа животного
+     * @return сохраненный тип животного
      */
-    public AnimalType save(AnimalType type) {
-        if (type.getName() == null || type.getName().isBlank()) {
-            throw new IllegalArgumentException("Название типа обязательно");
-        }
+    @Transactional
+    public AnimalTypeResponseDto create(
+            AnimalTypeRequestDto dto
+    ) {
 
-        type.setName(capitalize(type.getName()));
-        return repository.save(type);
+        AnimalType animalType = new AnimalType();
+
+        animalType.setName(
+                capitalize(dto.getName())
+        );
+
+        animalType.setAverageLifespan(
+                dto.getAverageLifespan()
+        );
+
+        AnimalType savedAnimalType =
+                animalTypeRepository.save(animalType);
+
+        return toDto(savedAnimalType);
     }
 
     /**
      * Обновляет информацию о типе животного.
-     * Находит существующий тип по идентификатору и обновляет его поля.
      *
-     * @param id Идентификатор типа животного для обновления
-     * @param type Новые данные типа животного (название, средняя продолжительность жизни)
-     * @return Обновленный объект типа животного
+     * @param id идентификатор типа животного
+     * @param dto DTO объект типа животного
+     * @return обновленный тип животного
      */
+    @Transactional
+    public AnimalTypeResponseDto update(
+            Integer id,
+            AnimalTypeRequestDto dto
+    ) {
 
-    public AnimalType update(Integer id, AnimalType type) {
-        AnimalType existing = findById(id);
+        AnimalType animalType = animalTypeRepository.findById(id)
+                .orElseThrow(() ->
+                        new NotFoundException(
+                                "Тип животного не найден"
+                        ));
 
-        existing.setName(type.getName());
-        existing.setAverageLifespan(type.getAverageLifespan());
+        animalType.setName(
+                capitalize(dto.getName())
+        );
 
-        return save(existing);
+        animalType.setAverageLifespan(
+                dto.getAverageLifespan()
+        );
+
+        AnimalType updatedAnimalType =
+                animalTypeRepository.save(animalType);
+
+        return toDto(updatedAnimalType);
     }
 
     /**
-     * Удаляет тип животного из системы по идентификатору.
+     * Удаляет тип животного из системы.
      *
-     * @param id Идентификатор типа животного для удаления
+     * @param id идентификатор типа животного
      */
+    @Transactional
     public void delete(Integer id) {
-        repository.deleteById(id);
+
+        animalTypeRepository.deleteById(id);
+    }
+
+    /**
+     * Преобразует сущность AnimalType в DTO.
+     *
+     * @param animalType сущность типа животного
+     * @return DTO объект типа животного
+     */
+    private AnimalTypeResponseDto toDto(
+            AnimalType animalType
+    ) {
+
+        AnimalTypeResponseDto dto =
+                new AnimalTypeResponseDto();
+
+        dto.setId(animalType.getId());
+
+        dto.setName(animalType.getName());
+
+        dto.setAverageLifespan(
+                animalType.getAverageLifespan()
+        );
+
+        return dto;
     }
 }

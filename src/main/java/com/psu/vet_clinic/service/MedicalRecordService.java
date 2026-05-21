@@ -1,11 +1,17 @@
 package com.psu.vet_clinic.service;
 
+import com.psu.vet_clinic.dto.request.MedicalRecordRequestDto;
+import com.psu.vet_clinic.dto.response.MedicalRecordResponseDto;
+import com.psu.vet_clinic.entity.Animal;
 import com.psu.vet_clinic.entity.MedicalRecord;
 import com.psu.vet_clinic.exception.NotFoundException;
+import com.psu.vet_clinic.repository.AnimalRepository;
 import com.psu.vet_clinic.repository.MedicalRecordRepository;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import static com.psu.vet_clinic.util.TextNormalizer.capitalize;
 
@@ -13,32 +19,39 @@ import static com.psu.vet_clinic.util.TextNormalizer.capitalize;
  * Сервис для работы с медицинскими записями в ветеринарной клинике.
  * Обеспечивает бизнес-логику операций CRUD для сущности MedicalRecord.
  */
+//FIX_ME: после добавления DTO обновлена логика всех методов
 @Service
 public class MedicalRecordService {
 
     /**
      * Репозиторий для работы с данными медицинских записей
      */
-    private final MedicalRecordRepository repository;
+    private final MedicalRecordRepository medicalRecordRepository;
 
+    private final AnimalRepository animalRepository;
     /**
      * Конструктор с внедрением зависимости репозитория.
      *
-     * @param repository Репозиторий для работы с медицинскими записями
      */
-    public MedicalRecordService(MedicalRecordRepository repository) {
-        this.repository = repository;
+    public MedicalRecordService(
+            MedicalRecordRepository medicalRecordRepository,
+            AnimalRepository animalRepository
+    ) {
+        this.medicalRecordRepository = medicalRecordRepository;
+        this.animalRepository = animalRepository;
     }
-
     /**
      * Получает список всех медицинских записей в системе.
      *
      * @return Список всех медицинских записей
      */
-    public List<MedicalRecord> findAll() {
-        return repository.findAll();
-    }
+    public List<MedicalRecordResponseDto> findAll() {
 
+        return medicalRecordRepository.findAll()
+                .stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
     /**
      * Находит медицинскую запись по ее идентификатору.
      *
@@ -46,10 +59,16 @@ public class MedicalRecordService {
      * @return Найденная медицинская запись
      * @throws NotFoundException Если медицинская запись с указанным идентификатором не найдена
      */
-    public MedicalRecord findById(Integer id) {
-        return repository.findById(id)
-                .orElseThrow(() ->
-                        new NotFoundException("MedicalRecord not found: " + id));
+    public MedicalRecordResponseDto findById(Integer id) {
+
+        MedicalRecord medicalRecord =
+                medicalRecordRepository.findById(id)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Medical record not found"
+                                ));
+
+        return toDto(medicalRecord);
     }
 
     /**
@@ -58,10 +77,13 @@ public class MedicalRecordService {
      * @param animalId Идентификатор животного
      * @return Список медицинских записей, связанных с указанным животным
      */
-    public List<MedicalRecord> findByAnimalId(Integer animalId) {
-        return repository.findByAnimalId(animalId);
-    }
+    public List<MedicalRecordResponseDto> findByAnimalId(Integer animalId) {
 
+        return medicalRecordRepository.findByAnimalId(animalId)
+                .stream()
+                .map(this::toDto)
+                .collect(Collectors.toList());
+    }
     /**
      * Сохраняет медицинскую запись в системе.
      * Перед сохранением выполняет валидацию и нормализацию данных:
@@ -69,49 +91,76 @@ public class MedicalRecordService {
      * - Проверяет, что диагноз и тип процедуры не пустые
      * - Приводит диагноз и тип процедуры к виду с заглавной первой буквой
      *
-     * @param record Объект медицинской записи для сохранения
      * @return Сохраненная медицинская запись
      * @throws IllegalArgumentException Если не пройдена валидация данных
      */
-    public MedicalRecord save(MedicalRecord record) {
-        if (record.getVisitDate() == null) {
-            throw new IllegalArgumentException("Дата визита обязательна");
-        }
+    @Transactional
+    public MedicalRecordResponseDto create(
+            MedicalRecordRequestDto dto
+    ) {
 
-        int year = record.getVisitDate().getYear();
-        if (year < 2000 || year > 2100) {
-            throw new IllegalArgumentException("Год визита должен быть между 2000 и 2100");
-        }
+        Animal animal = animalRepository.findById(
+                dto.getAnimalId()
+        ).orElseThrow(() ->
+                new RuntimeException("Animal not found"));
 
-        if (record.getDiagnosis() == null || record.getDiagnosis().isBlank()) {
-            throw new IllegalArgumentException("Диагноз обязателен");
-        }
+        MedicalRecord medicalRecord = new MedicalRecord();
 
-        if (record.getProcedureType() == null || record.getProcedureType().isBlank()) {
-            throw new IllegalArgumentException("Процедура обязательна");
-        }
+        medicalRecord.setVisitDate(dto.getVisitDate());
 
-        record.setDiagnosis(capitalize(record.getDiagnosis()));
-        record.setProcedureType(capitalize(record.getProcedureType()));
+        medicalRecord.setDiagnosis(dto.getDiagnosis());
 
-        return repository.save(record);
+        medicalRecord.setProcedureType(
+                dto.getProcedureType()
+        );
+
+        medicalRecord.setAnimal(animal);
+
+        MedicalRecord savedMedicalRecord =
+                medicalRecordRepository.save(medicalRecord);
+
+        return toDto(savedMedicalRecord);
     }
 
     /**
      * Обновляет существующую медицинскую запись.
      *
      * @param id Идентификатор медицинской записи для обновления
-     * @param record Новые данные медицинской записи (диагноз, процедура, дата визита)
      * @return Обновленная медицинская запись
      */
 
-    public MedicalRecord update(Integer id, MedicalRecord record) {
-        MedicalRecord existing = findById(id);
+    @Transactional
+    public MedicalRecordResponseDto update(
+            Integer id,
+            MedicalRecordRequestDto dto
+    ) {
 
-        record.setId(id);
-        record.setAnimal(existing.getAnimal());
+        MedicalRecord medicalRecord =
+                medicalRecordRepository.findById(id)
+                        .orElseThrow(() ->
+                                new RuntimeException(
+                                        "Medical record not found"
+                                ));
 
-        return save(record);
+        Animal animal = animalRepository.findById(
+                dto.getAnimalId()
+        ).orElseThrow(() ->
+                new RuntimeException("Animal not found"));
+
+        medicalRecord.setVisitDate(dto.getVisitDate());
+
+        medicalRecord.setDiagnosis(dto.getDiagnosis());
+
+        medicalRecord.setProcedureType(
+                dto.getProcedureType()
+        );
+
+        medicalRecord.setAnimal(animal);
+
+        MedicalRecord updatedMedicalRecord =
+                medicalRecordRepository.save(medicalRecord);
+
+        return toDto(updatedMedicalRecord);
     }
 
     /**
@@ -119,7 +168,40 @@ public class MedicalRecordService {
      *
      * @param id Идентификатор медицинской записи для удаления
      */
+    @Transactional
     public void delete(Integer id) {
-        repository.deleteById(id);
+        medicalRecordRepository.deleteById(id);
+    }
+
+    private MedicalRecordResponseDto toDto(
+            MedicalRecord medicalRecord
+    ) {
+
+        MedicalRecordResponseDto dto =
+                new MedicalRecordResponseDto();
+
+        dto.setId(medicalRecord.getId());
+
+        dto.setVisitDate(
+                medicalRecord.getVisitDate()
+        );
+
+        dto.setDiagnosis(
+                medicalRecord.getDiagnosis()
+        );
+
+        dto.setProcedureType(
+                medicalRecord.getProcedureType()
+        );
+
+        dto.setAnimalId(
+                medicalRecord.getAnimal().getId()
+        );
+
+        dto.setAnimalName(
+                medicalRecord.getAnimal().getName()
+        );
+
+        return dto;
     }
 }

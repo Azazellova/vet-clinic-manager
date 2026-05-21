@@ -144,7 +144,7 @@
     }
 
     function loadAnimals() {
-        fetch('/animals')
+        fetch('/api/v1/animals')
             .then(r => r.json())
             .then(data => {
                 animals = data;
@@ -162,8 +162,8 @@
 
     function loadRecords() {
         const url = animalId
-            ? `/medical-records/by-animal/${animalId}`
-            : `/medical-records`;
+            ? `/api/v1/medical-records/animal/${animalId}`
+            : `/api/v1/medical-records`;
 
         fetch(url)
             .then(r => r.json())
@@ -194,12 +194,10 @@
                 <tr>
                     <td>${r.id}</td>
                     <td>
-                        ${r.animal
-                            ? `<a class="link"
-                            href="medical-records.html?animalId=${r.animal.id}">
-                            ${r.animal.name}
-                            </a>`
-                                    : '—'}
+                        <a class="link"
+                           href="medical-records.html?animalId=${r.animalId}">
+                            ${r.animalName ?? '-'}
+                        </a>
                     </td>
                     <td>${r.visitDate}</td>
                     <td>${r.diagnosis}</td>
@@ -238,14 +236,14 @@
             return;
         }
 
-        fetch('/medical-records', {
+        fetch('/api/v1/medical-records', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 visitDate: visitDate.value,
                 diagnosis: diagnosis.value,
                 procedureType: procedureType.value,
-                animal: { id: selectedAnimalId }
+                animalId: Number(selectedAnimalId)
             })
         })
             .then(handleResponse)
@@ -281,13 +279,14 @@
     function saveRecord() {
         const id = document.getElementById('editId').value;
 
-        fetch('/medical-records/' + id, {
+        fetch('/api/v1/medical-records/' + id, {
             method: 'PUT',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({
                 visitDate: editVisitDate.value,
                 diagnosis: editDiagnosis.value,
-                procedureType: editProcedureType.value
+                procedureType: editProcedureType.value,
+                animalId: Number(animalId)
             })
         })
             .then(handleResponse)
@@ -305,7 +304,7 @@
 
     function deleteRecord(id) {
         if (!confirm('Удалить запись?')) return;
-        fetch('/medical-records/' + id, { method: 'DELETE' })
+        fetch('/api/v1/medical-records/' + id, { method: 'DELETE' })
             .then(loadRecords);
     }
 

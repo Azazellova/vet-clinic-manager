@@ -1,82 +1,123 @@
 package com.psu.vet_clinic.controller;
 
-import com.psu.vet_clinic.entity.AnimalType;
+import com.psu.vet_clinic.dto.request.AnimalTypeRequestDto;
+import com.psu.vet_clinic.dto.response.AnimalTypeResponseDto;
 import com.psu.vet_clinic.service.AnimalTypeService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 /**
  * Контроллер для управления типами животных в ветеринарной клинике.
- * Предоставляет REST API для операций с типами животных (видами).
+ * Предоставляет REST API для операций с типами животных.
  */
+//FIX_ME: после добавления DTO обновлена логика всех методов
 @RestController
-@RequestMapping("/animal-types")
+@RequestMapping("/api/v1/animal-types")
 public class AnimalTypeController {
 
     /**
-     * Сервис для работы с типами животных
+     * Сервис для работы с типами животных.
      */
-    private final AnimalTypeService service;
+    private final AnimalTypeService animalTypeService;
 
     /**
      * Конструктор с внедрением зависимости.
      *
-     * @param service Сервис для работы с типами животных
+     * @param animalTypeService сервис для работы с типами животных
      */
-    public AnimalTypeController(AnimalTypeService service) {
-        this.service = service;
+    public AnimalTypeController(
+            AnimalTypeService animalTypeService
+    ) {
+        this.animalTypeService = animalTypeService;
     }
 
     /**
-     * Получает список всех типов животных, зарегистрированных в системе.
+     * Получает список всех типов животных.
      *
-     * @return Список всех типов животных
+     * @return список типов животных
      */
     @GetMapping
-    public List<AnimalType> findAll() {
-        return service.findAll();
+    public ResponseEntity<List<AnimalTypeResponseDto>>
+    findAll() {
+
+        return ResponseEntity.ok(
+                animalTypeService.findAll()
+        );
     }
 
     /**
-     * Создает новый тип животного в системе.
+     * Получает тип животного по идентификатору.
      *
-     * @param type Объект типа животного для создания
-     * @return Созданный тип животного с присвоенным идентификатором
+     * @param id идентификатор типа животного
+     * @return объект типа животного
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<AnimalTypeResponseDto>
+    findById(
+            @PathVariable Integer id
+    ) {
+
+        return ResponseEntity.ok(
+                animalTypeService.findById(id)
+        );
+    }
+
+    /**
+     * Создает новый тип животного.
+     *
+     * @param dto DTO объект типа животного
+     * @return созданный тип животного
      */
     @PostMapping
-    public AnimalType create(@Valid @RequestBody AnimalType type) {
-        return service.save(type);
+    public ResponseEntity<AnimalTypeResponseDto>
+    create(
+            @Valid
+            @RequestBody
+            AnimalTypeRequestDto dto
+    ) {
+
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(animalTypeService.create(dto));
     }
 
     /**
      * Обновляет информацию о типе животного.
-     * Использует сервис для выполнения обновления с валидацией.
      *
-     * @param id Идентификатор типа животного для обновления
-     * @param type Новые данные типа животного
-     * @return Обновленный объект типа животного
+     * @param id идентификатор типа животного
+     * @param dto DTO объект типа животного
+     * @return обновленный тип животного
      */
-
     @PutMapping("/{id}")
-    public AnimalType update(
+    public ResponseEntity<AnimalTypeResponseDto>
+    update(
             @PathVariable Integer id,
-            @Valid @RequestBody AnimalType type
+            @Valid
+            @RequestBody
+            AnimalTypeRequestDto dto
     ) {
-        return service.update(id, type);
+
+        return ResponseEntity.ok(
+                animalTypeService.update(id, dto)
+        );
     }
 
     /**
-     * Удаляет тип животного из системы по идентификатору.
-     * Примечание: удаление типа животного может быть ограничено, если существуют животные этого типа.
+     * Удаляет тип животного по идентификатору.
      *
-     * @param id Идентификатор типа животного для удаления
+     * @param id идентификатор типа животного
+     * @return пустой ответ
      */
-
-
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Integer id) {
-        service.delete(id);
+    public ResponseEntity<Void>
+    delete(@PathVariable Integer id) {
+
+        animalTypeService.delete(id);
+
+        return ResponseEntity.noContent().build();
     }
 }

@@ -79,11 +79,11 @@
             <label>Пол</label>
             <div class="radio-group">
                 <label>
-                    <input type="radio" name="addGender" value="мужской" checked>
+                    <input type="radio" name="addGender" value="самец" checked>
                     Самец
                 </label>
                 <label>
-                    <input type="radio" name="addGender" value="женский">
+                    <input type="radio" name="addGender" value="самка">
                     Самка
                 </label>
             </div>
@@ -133,11 +133,11 @@
             <label>Пол</label>
             <div class="radio-group">
                 <label>
-                    <input type="radio" name="editGender" value="мужской">
+                    <input type="radio" name="editGender" value="самец">
                     Самец
                 </label>
                 <label>
-                    <input type="radio" name="editGender" value="женский">
+                    <input type="radio" name="editGender" value="самка">
                     Самка
                 </label>
             </div>
@@ -199,7 +199,7 @@
     }
 
     function loadAnimals() {
-        fetch('/animals')
+        fetch('api/v1/animals')
             .then(r => r.json())
             .then(data => {
                 animals = data;
@@ -208,7 +208,7 @@
     }
 
     function loadAnimalTypes() {
-        fetch('/animal-types')
+        fetch('api/v1/animal-types')
             .then(r => r.json())
             .then(data => {
                 animalTypes = data;
@@ -248,7 +248,7 @@
             <td>${a.breed}</td>
             <td>${a.color ?? '-'}</td>
             <td>${a.weight ?? '-'}</td>
-            <td><span class="badge">${a.animalType?.name ?? '-'}</span></td>
+            <td><span class="badge">${a.animalTypeName ?? '-'}</span></td>
             <td>
                 <button class="btn btn-blue btn-sm" onclick="openMedicalRecords(${a.id})">
                     Просмотр
@@ -328,9 +328,9 @@
 
         if (animalTypes.length === 0) {
             loadAnimalTypes();
-            setTimeout(() => fillTypeSelect(a.animalType.id), 200);
+            setTimeout(() => fillTypeSelect(a.animalTypeId), 200);
         } else {
-            fillTypeSelect(a.animalType.id);
+            fillTypeSelect(a.animalTypeId);
         }
 
         document.getElementById('editForm').style.display = 'block';
@@ -361,19 +361,21 @@
             name: addName.value.trim(),
             age: Number(addAge.value),
             breed: addBreed.value.trim(),
-            gender: document.querySelector('input[name="addGender"]:checked')?.value,
+            gender: document.querySelector(
+                'input[name="addGender"]:checked'
+            )?.value,
             weight: Number(addWeight.value),
             color: addColor.value.trim(),
-            animalType: {
-                id: Number(document.getElementById('addType').value)
-            }
+            animalTypeId: Number(
+                document.getElementById('addType').value
+            )
         };
 
         if (!validateAnimalForm(data)) {
             return;
         }
 
-        fetch('/animals', {
+        fetch('/api/v1/animals', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(data)
@@ -393,17 +395,23 @@
             name: editName.value.trim(),
             age: Number(editAge.value),
             breed: editBreed.value.trim(),
-            gender: document.querySelector('input[name="editGender"]:checked')?.value,
+            gender: document.querySelector(
+                'input[name="editGender"]:checked'
+            )?.value,
             weight: Number(editWeight.value),
             color: editColor.value.trim(),
-            animalType: {
-                id: Number(editType.value)
-            }
+            animalTypeId: Number(editType.value)
         };
 
-        if (!validateAnimalForm(data)) return;
+        //FIX_ME: однострочные if запрещены
+        //if (!validateAnimalForm(data)) return;
 
-        fetch('/animals/' + id, {
+        if (!validateAnimalForm(data)) {
+            return;
+        }
+
+
+        fetch('/api/v1/animals/' + id, {
             method: 'PUT',
             headers: {'Content-Type': 'application/json'},
             body: JSON.stringify(data)
@@ -454,7 +462,7 @@
             return false;
         }
 
-        if (!data.animalType?.id) {
+        if (!data.animalTypeId) {
             alert('Выберите тип животного');
             return false;
         }

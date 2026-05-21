@@ -1,106 +1,148 @@
 package com.psu.vet_clinic.controller;
 
-import com.psu.vet_clinic.entity.MedicalRecord;
-import com.psu.vet_clinic.service.AnimalService;
+import com.psu.vet_clinic.dto.request.MedicalRecordRequestDto;
+import com.psu.vet_clinic.dto.response.MedicalRecordResponseDto;
 import com.psu.vet_clinic.service.MedicalRecordService;
 import jakarta.validation.Valid;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 /**
- * Контроллер для управления медицинскими записями в ветеринарной клинике.
- * Предоставляет REST API для операций с медицинскими записями о визитах животных.
+ * Контроллер для управления медицинскими записями
+ * в ветеринарной клинике.
+ * Предоставляет REST API для операций
+ * с медицинскими записями о визитах животных.
  */
+//FIX_ME: после добавления DTO обновлена логика всех методов
 @RestController
-@RequestMapping("/medical-records")
+@RequestMapping("/api/v1/medical-records")
 public class MedicalRecordController {
 
     /**
-     * Сервис для работы с медицинскими записями
+     * Сервис для работы с медицинскими записями.
      */
-    private final MedicalRecordService service;
+    private final MedicalRecordService medicalRecordService;
 
     /**
-     * Сервис для работы с животными
-     */
-    private final AnimalService animalService;
-
-    /**
-     * Конструктор с внедрением зависимостей.
+     * Конструктор с внедрением зависимости.
      *
-     * @param service Сервис для работы с медицинскими записями
-     * @param animalService Сервис для работы с животными
+     * @param medicalRecordService
+     *        сервис для работы с медицинскими записями
      */
-    public MedicalRecordController(MedicalRecordService service,
-                                   AnimalService animalService) {
-        this.service = service;
-        this.animalService = animalService;
+    public MedicalRecordController(
+            MedicalRecordService medicalRecordService
+    ) {
+        this.medicalRecordService = medicalRecordService;
     }
 
     /**
-     * Получает список всех медицинских записей в системе.
+     * Получает список всех медицинских записей.
      *
-     * @return Список всех медицинских записей
+     * @return список медицинских записей
      */
     @GetMapping
-    public List<MedicalRecord> findAll() {
-        return service.findAll();
+    public ResponseEntity<List<MedicalRecordResponseDto>>
+    findAll() {
+
+        return ResponseEntity.ok(
+                medicalRecordService.findAll()
+        );
+    }
+
+    /**
+     * Получает медицинскую запись по идентификатору.
+     *
+     * @param id идентификатор медицинской записи
+     * @return медицинская запись
+     */
+    @GetMapping("/{id}")
+    public ResponseEntity<MedicalRecordResponseDto>
+    findById(
+            @PathVariable Integer id
+    ) {
+
+        return ResponseEntity.ok(
+                medicalRecordService.findById(id)
+        );
     }
 
     /**
      * Создает новую медицинскую запись.
-     * Перед сохранением проверяет наличие идентификатора животного и загружает полный объект Animal.
      *
-     * @param record Объект медицинской записи для создания
-     * @return Созданная медицинская запись с присвоенным идентификатором
-     * @throws IllegalArgumentException Если идентификатор животного не указан
+     * @param dto DTO объект медицинской записи
+     * @return созданная медицинская запись
      */
     @PostMapping
-    public MedicalRecord create(@Valid @RequestBody MedicalRecord record) {
-        if (record.getAnimal() == null || record.getAnimal().getId() == null) {
-            throw new IllegalArgumentException("Animal ID is required");
-        }
+    public ResponseEntity<MedicalRecordResponseDto>
+    create(
+            @Valid
+            @RequestBody
+            MedicalRecordRequestDto dto
+    ) {
 
-        record.setAnimal(
-                animalService.findById(record.getAnimal().getId())
-        );
-
-        return service.save(record);
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(medicalRecordService.create(dto));
     }
 
     /**
-     * Получает все медицинские записи для конкретного животного.
+     * Получает все медицинские записи
+     * для конкретного животного.
      *
-     * @param animalId Идентификатор животного
-     * @return Список медицинских записей для указанного животного
+     * @param animalId идентификатор животного
+     * @return список медицинских записей
      */
-    @GetMapping("/by-animal/{animalId}")
-    public List<MedicalRecord> findByAnimal(@PathVariable Integer animalId) {
-        return service.findByAnimalId(animalId);
+    @GetMapping("/animal/{animalId}")
+    public ResponseEntity<List<MedicalRecordResponseDto>>
+    findByAnimalId(
+            @PathVariable Integer animalId
+    ) {
+
+        return ResponseEntity.ok(
+                medicalRecordService.findByAnimalId(
+                        animalId
+                )
+        );
     }
 
     /**
      * Обновляет существующую медицинскую запись.
-     * При обновлении сохраняет связь с тем же животным, что и в исходной записи.
      *
-     * @param id Идентификатор медицинской записи для обновления
-     * @return Обновленная медицинская запись
+     * @param id идентификатор медицинской записи
+     * @param dto DTO объект медицинской записи
+     * @return обновленная медицинская запись
      */
-
     @PutMapping("/{id}")
-    public MedicalRecord update(@PathVariable Integer id,
-                                @RequestBody MedicalRecord record) {
-        return service.update(id, record);
+    public ResponseEntity<MedicalRecordResponseDto>
+    update(
+            @PathVariable Integer id,
+            @Valid
+            @RequestBody
+            MedicalRecordRequestDto dto
+    ) {
+
+        return ResponseEntity.ok(
+                medicalRecordService.update(id, dto)
+        );
     }
 
     /**
      * Удаляет медицинскую запись по идентификатору.
      *
-     * @param id Идентификатор медицинской записи для удаления
+     * @param id идентификатор медицинской записи
+     * @return пустой ответ
      */
     @DeleteMapping("/{id}")
-    public void delete(@PathVariable Integer id) {
-        service.delete(id);
+    public ResponseEntity<Void>
+    delete(
+            @PathVariable Integer id
+    ) {
+
+        medicalRecordService.delete(id);
+
+        return ResponseEntity.noContent().build();
     }
 }

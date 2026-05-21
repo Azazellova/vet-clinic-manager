@@ -52,7 +52,9 @@ public class Animal {
      * Допустимые значения: "мужской" или "женский".
      */
     @NotBlank(message = "Пол обязателен")
-    @Pattern(regexp = "^(мужской|женский)$", message = "Пол должен быть 'мужской' или 'женский'")
+    //FIX_ME: в контексте программы лучше использовать самец/самка
+    //@Pattern(regexp = "^(мужской|женский)$", message = "Пол должен быть 'мужской' или 'женский'")
+    @Pattern(regexp = "^(самец|самка|мужской|женский)$", message = "Пол должен быть 'самец' или 'самка'")
     @Column(name = "gender", nullable = false, length = 10)
     private String gender;
 
