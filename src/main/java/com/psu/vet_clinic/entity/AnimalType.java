@@ -26,7 +26,7 @@ public class AnimalType {
      * Не может быть пустой строкой.
      */
     @NotBlank(message = "Название типа животного обязательно")
-    @Column(name = "name", nullable = false, length = 100)
+    @Column(name = "name", nullable = false, length = 100, unique = true)
     private String name;
 
     /**

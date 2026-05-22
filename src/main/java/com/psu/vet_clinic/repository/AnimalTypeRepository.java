@@ -2,6 +2,7 @@ package com.psu.vet_clinic.repository;
 
 import com.psu.vet_clinic.entity.AnimalType;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.stereotype.Repository;
 
 /**
  * Репозиторий для работы с сущностью AnimalType (Тип животного).
@@ -9,5 +10,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
  *
  * <p>Дополнительные методы для поиска можно добавлять при помощи Spring Data JPA.</p>
  */
-public interface AnimalTypeRepository extends JpaRepository<AnimalType, Integer> {
+@Repository
+public interface AnimalTypeRepository
+        extends JpaRepository<AnimalType, Integer> {
+
+    boolean existsByName(String name);
 }

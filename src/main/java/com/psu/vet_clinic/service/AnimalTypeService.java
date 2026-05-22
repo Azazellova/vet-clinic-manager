@@ -81,6 +81,12 @@ public class AnimalTypeService {
 
         AnimalType animalType = new AnimalType();
 
+        if (animalTypeRepository.existsByName(dto.getName())) {
+            throw new RuntimeException(
+                    "Тип животного с таким названием уже существует"
+            );
+        }
+
         animalType.setName(
                 capitalize(dto.getName())
         );
@@ -113,6 +119,14 @@ public class AnimalTypeService {
                         new NotFoundException(
                                 "Тип животного не найден"
                         ));
+        if (
+                animalTypeRepository.existsByName(dto.getName())
+                        && !animalType.getName().equals(dto.getName())
+        ) {
+            throw new RuntimeException(
+                    "Тип животного с таким названием уже существует"
+            );
+        }
 
         animalType.setName(
                 capitalize(dto.getName())
