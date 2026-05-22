@@ -244,7 +244,9 @@
                 </a>
             </td>
             <td>${a.age}</td>
-            <td>${a.gender}</td>
+            <td>${a.gender
+                ? a.gender.charAt(0).toUpperCase() + a.gender.slice(1)
+                : '-'}</td>
             <td>${a.breed}</td>
             <td>${a.color ?? '-'}</td>
             <td>${a.weight ?? '-'}</td>
